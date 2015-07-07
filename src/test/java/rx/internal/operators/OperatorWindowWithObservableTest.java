@@ -30,6 +30,7 @@ import org.junit.Test;
 import rx.Observable;
 import rx.Observer;
 import rx.exceptions.TestException;
+import rx.functions.Action1;
 import rx.functions.Func0;
 import rx.observers.TestSubscriber;
 import rx.subjects.PublishSubject;
@@ -289,5 +290,49 @@ public class OperatorWindowWithObservableTest {
 
         assertEquals(1, ts.getOnNextEvents().size());
         assertEquals(Arrays.asList(1, 2), tsw.getOnNextEvents());
+    }
+
+    @Test
+    public void testWindowNoEmptyStart() {
+
+
+        final PublishSubject<Integer> source = PublishSubject.create();
+        final PublishSubject<Integer> boundary = PublishSubject.create();
+
+        @SuppressWarnings("unchecked")
+        final Observer<Object> o = mock(Observer.class);
+
+        final List<Observer<Object>> values = new ArrayList<Observer<Object>>();
+
+        Observer<Observable<Integer>> wo = new Observer<Observable<Integer>>() {
+            @Override
+            public void onNext(Observable<Integer> args) {
+                @SuppressWarnings("unchecked")
+                final Observer<Object> mo = mock(Observer.class);
+                values.add(mo);
+
+                args.subscribe(mo);
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                o.onError(e);
+            }
+
+            @Override
+            public void onCompleted() {
+                o.onCompleted();
+            }
+        };
+
+        source.window(boundary).subscribe(wo);
+
+        source.onNext(1);
+
+        boundary.onNext(1);
+
+        assertEquals(1, values.size());
+
+
     }
 }
